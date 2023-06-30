@@ -16,26 +16,6 @@ pub struct Opts<'a> {
     pub scope_opts: ScopeOpts,
 }
 
-#[derive(Debug, Default)]
-pub struct CacheOpts<'a> {
-    override_dir: Option<&'a str>,
-    skip_remote: bool,
-    skip_filesystem: bool,
-    workers: u32,
-    pub(crate) remote_cache_opts: Option<RemoteCacheOpts>,
-}
-
-impl<'a> From<&'a RunArgs> for CacheOpts<'a> {
-    fn from(run_args: &'a RunArgs) -> Self {
-        CacheOpts {
-            override_dir: run_args.cache_dir.as_deref(),
-            skip_filesystem: run_args.remote_only,
-            workers: run_args.cache_workers,
-            ..CacheOpts::default()
-        }
-    }
-}
-
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct RemoteCacheOpts {
     team_id: String,
@@ -58,6 +38,26 @@ impl<'a> TryFrom<&'a Args> for Opts<'a> {
             scope_opts: ScopeOpts::default(),
             runcache_opts: RunCacheOpts::default(),
         })
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct CacheOpts<'a> {
+    override_dir: Option<&'a str>,
+    skip_remote: bool,
+    skip_filesystem: bool,
+    workers: u32,
+    pub(crate) remote_cache_opts: Option<RemoteCacheOpts>,
+}
+
+impl<'a> From<&'a RunArgs> for CacheOpts<'a> {
+    fn from(run_args: &'a RunArgs) -> Self {
+        CacheOpts {
+            override_dir: run_args.cache_dir.as_deref(),
+            skip_filesystem: run_args.remote_only,
+            workers: run_args.cache_workers,
+            ..CacheOpts::default()
+        }
     }
 }
 
