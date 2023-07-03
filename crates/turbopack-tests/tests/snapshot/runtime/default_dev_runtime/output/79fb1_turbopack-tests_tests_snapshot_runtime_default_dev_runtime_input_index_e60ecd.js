@@ -32,14 +32,14 @@ function esm(exports, getters) {
         });
     }
 }
-function esmExport(module, getters) {
-    esm(module.namespaceObject = module.exports, getters);
+function esmExport(module, exports, getters) {
+    esm(module.namespaceObject = exports, getters);
 }
-function dynamicExport(module, object) {
+function dynamicExport(module, exports, object) {
     let reexportedObjects = module[REEXPORTED_OBJECTS];
     if (!reexportedObjects) {
         reexportedObjects = module[REEXPORTED_OBJECTS] = [];
-        module.namespaceObject = new Proxy(module.exports, {
+        module.namespaceObject = new Proxy(exports, {
             get (target, prop) {
                 if (hasOwnProperty.call(target, prop) || prop === "default" || prop === "__esModule") {
                     return Reflect.get(target, prop);
@@ -96,6 +96,25 @@ function esmImport(sourceModule, id) {
     if (module.error) throw module.error;
     if (module.namespaceObject) return module.namespaceObject;
     const raw = module.exports;
+    if (isPromise(raw)) {
+        const promise = raw.then((e)=>{
+            const ns = {};
+            interopEsm(e, ns, e.__esModule);
+            return ns;
+        });
+        module.namespaceObject = Object.assign(promise, {
+            get [turbopackExports] () {
+                return raw[turbopackExports];
+            },
+            get [turbopackQueues] () {
+                return raw[turbopackQueues];
+            },
+            get [turbopackError] () {
+                return raw[turbopackError];
+            }
+        });
+        return module.namespaceObject;
+    }
     const ns = module.namespaceObject = {};
     interopEsm(raw, ns, raw.__esModule);
     return ns;
@@ -127,6 +146,112 @@ function requireContext(sourceModule, map) {
 }
 function getChunkPath(chunkData) {
     return typeof chunkData === "string" ? chunkData : chunkData.path;
+}
+function isPromise(maybePromise) {
+    return maybePromise != null && typeof maybePromise === "object" && "then" in maybePromise && typeof maybePromise.then === "function";
+}
+function createPromise() {
+    let resolve;
+    let reject;
+    const promise = new Promise((res, rej)=>{
+        reject = rej;
+        resolve = res;
+    });
+    return {
+        promise,
+        resolve: resolve,
+        reject: reject
+    };
+}
+const turbopackQueues = Symbol("turbopack queues");
+const turbopackExports = Symbol("turbopack exports");
+const turbopackError = Symbol("turbopack error");
+function resolveQueue(queue) {
+    if (queue && !queue.resolved) {
+        queue.resolved = true;
+        queue.forEach((fn)=>fn.queueCount--);
+        queue.forEach((fn)=>fn.queueCount-- ? fn.queueCount++ : fn());
+    }
+}
+function wrapDeps(deps) {
+    return deps.map((dep)=>{
+        if (dep !== null && typeof dep === "object") {
+            if (turbopackQueues in dep) return dep;
+            if (isPromise(dep)) {
+                const queue = Object.assign([], {
+                    resolved: false
+                });
+                const obj = {
+                    [turbopackExports]: {},
+                    [turbopackQueues]: (fn)=>fn(queue)
+                };
+                dep.then((res)=>{
+                    obj[turbopackExports] = res;
+                    resolveQueue(queue);
+                }, (err)=>{
+                    obj[turbopackError] = err;
+                    resolveQueue(queue);
+                });
+                return obj;
+            }
+        }
+        const ret = {
+            [turbopackExports]: dep,
+            [turbopackQueues]: ()=>{}
+        };
+        return ret;
+    });
+}
+function asyncModule(module, body, hasAwait) {
+    const queue = hasAwait ? Object.assign([], {
+        resolved: true
+    }) : undefined;
+    const depQueues = new Set();
+    const exports = module.exports;
+    const { resolve, reject, promise: rawPromise } = createPromise();
+    const promise = Object.assign(rawPromise, {
+        [turbopackExports]: exports,
+        [turbopackQueues]: (fn)=>{
+            queue && fn(queue);
+            depQueues.forEach(fn);
+            promise["catch"](()=>{});
+        }
+    });
+    module.exports = promise;
+    function handleAsyncDependencies(deps) {
+        const currentDeps = wrapDeps(deps);
+        const getResult = ()=>currentDeps.map((d)=>{
+                if (d[turbopackError]) throw d[turbopackError];
+                return d[turbopackExports];
+            });
+        const { promise, resolve } = createPromise();
+        const fn = Object.assign(()=>resolve(getResult), {
+            queueCount: 0
+        });
+        function fnQueue(q) {
+            if (q !== queue && !depQueues.has(q)) {
+                depQueues.add(q);
+                if (q && !q.resolved) {
+                    fn.queueCount++;
+                    q.push(fn);
+                }
+            }
+        }
+        currentDeps.map((dep)=>dep[turbopackQueues](fnQueue));
+        return fn.queueCount ? promise : getResult();
+    }
+    function asyncResult(err) {
+        if (err) {
+            reject(promise[turbopackError] = err);
+        } else {
+            resolve(exports);
+        }
+        resolveQueue(queue);
+    }
+    body(handleAsyncDependencies, asyncResult);
+    if (queue) {
+        queue.resolved = false;
+    }
 }
 ;
 ;
@@ -272,12 +397,13 @@ function instantiateModule(id, source) {
     try {
         runModuleExecutionHooks(module, (refresh)=>{
             moduleFactory.call(module.exports, augmentContext({
+                a: asyncModule.bind(null, module),
                 e: module.exports,
                 r: commonJsRequire.bind(null, module),
                 f: requireContext.bind(null, module),
                 i: esmImport.bind(null, module),
-                s: esmExport.bind(null, module),
-                j: dynamicExport.bind(null, module),
+                s: esmExport.bind(null, module, module.exports),
+                j: dynamicExport.bind(null, module, module.exports),
                 v: exportValue.bind(null, module),
                 n: exportNamespace.bind(null, module),
                 m: module,
