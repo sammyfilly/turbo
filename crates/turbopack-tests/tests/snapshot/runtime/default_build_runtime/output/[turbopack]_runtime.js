@@ -31,7 +31,7 @@ function dynamicExport(module, exports, object) {
     let reexportedObjects = module[REEXPORTED_OBJECTS];
     if (!reexportedObjects) {
         reexportedObjects = module[REEXPORTED_OBJECTS] = [];
-        module.namespaceObject = new Proxy(exports, {
+        const namespaceObject = new Proxy(exports, {
             get (target, prop) {
                 if (hasOwnProperty.call(target, prop) || prop === "default" || prop === "__esModule") {
                     return Reflect.get(target, prop);
@@ -52,6 +52,11 @@ function dynamicExport(module, exports, object) {
                 return keys;
             }
         });
+        if (isPromise(module.exports)) {
+            module.namespaceObject = maybeWrapAsyncModulePromise(module.exports, ()=>namespaceObject);
+        } else {
+            module.namespaceObject = namespaceObject;
+        }
     }
     reexportedObjects.push(object);
 }
@@ -82,6 +87,7 @@ function interopEsm(raw, ns, allowExportDefault) {
         getters["default"] = ()=>raw;
     }
     esm(ns, getters);
+    return ns;
 }
 function esmImport(sourceModule, id) {
     const module = getOrInstantiateModuleFromParent(id, sourceModule);
@@ -89,27 +95,10 @@ function esmImport(sourceModule, id) {
     if (module.namespaceObject) return module.namespaceObject;
     const raw = module.exports;
     if (isPromise(raw)) {
-        const promise = raw.then((e)=>{
-            const ns = {};
-            interopEsm(e, ns, e.__esModule);
-            return ns;
-        });
-        module.namespaceObject = Object.assign(promise, {
-            get [turbopackExports] () {
-                return raw[turbopackExports];
-            },
-            get [turbopackQueues] () {
-                return raw[turbopackQueues];
-            },
-            get [turbopackError] () {
-                return raw[turbopackError];
-            }
-        });
+        module.namespaceObject = maybeWrapAsyncModulePromise(raw, (e)=>interopEsm(e, {}, e.__esModule));
         return module.namespaceObject;
     }
-    const ns = module.namespaceObject = {};
-    interopEsm(raw, ns, raw.__esModule);
-    return ns;
+    return module.namespaceObject = interopEsm(raw, {}, raw.__esModule);
 }
 function commonJsRequire(sourceModule, id) {
     const module = getOrInstantiateModuleFromParent(id, sourceModule);
@@ -142,6 +131,26 @@ function getChunkPath(chunkData) {
 function isPromise(maybePromise) {
     return maybePromise != null && typeof maybePromise === "object" && "then" in maybePromise && typeof maybePromise.then === "function";
 }
+function isAsyncModuleExt(obj) {
+    return turbopackQueues in obj;
+}
+function maybeWrapAsyncModulePromise(promise, then) {
+    const newPromise = promise.then(then);
+    if (isAsyncModuleExt(promise)) {
+        Object.assign(newPromise, {
+            get [turbopackExports] () {
+                return promise[turbopackExports];
+            },
+            get [turbopackQueues] () {
+                return promise[turbopackQueues];
+            },
+            get [turbopackError] () {
+                return promise[turbopackError];
+            }
+        });
+    }
+    return newPromise;
+}
 function createPromise() {
     let resolve;
     let reject;
@@ -168,7 +177,7 @@ function resolveQueue(queue) {
 function wrapDeps(deps) {
     return deps.map((dep)=>{
         if (dep !== null && typeof dep === "object") {
-            if (turbopackQueues in dep) return dep;
+            if (isAsyncModuleExt(dep)) return dep;
             if (isPromise(dep)) {
                 const queue = Object.assign([], {
                     resolved: false
