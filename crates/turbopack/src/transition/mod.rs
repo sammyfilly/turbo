@@ -1,6 +1,9 @@
+pub(crate) mod context_transition;
+
 use std::collections::HashMap;
 
 use anyhow::Result;
+pub use context_transition::ContextTransitionVc;
 use turbo_tasks::Value;
 use turbopack_core::{
     asset::AssetVc, compile_time_info::CompileTimeInfoVc, module::ModuleVc,
