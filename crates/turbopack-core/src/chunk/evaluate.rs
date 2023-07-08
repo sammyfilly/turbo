@@ -24,7 +24,10 @@ impl EvaluatableAssetVc {
             Value::new(ReferenceType::Entry(EntryReferenceSubType::Runtime)),
         );
         let Some(entry) = EvaluatableAssetVc::resolve_from(asset).await? else {
-            bail!("{} is not a valid evaluated entry", asset.ident().to_string().await?)
+            bail!(
+                "{} is not a valid evaluated entry",
+                asset.ident().to_string().await?
+            )
         };
         Ok(entry)
     }
@@ -43,6 +46,11 @@ impl EvaluatableAssetsVc {
     #[turbo_tasks::function]
     pub fn one(entry: EvaluatableAssetVc) -> EvaluatableAssetsVc {
         EvaluatableAssets(vec![entry]).cell()
+    }
+
+    #[turbo_tasks::function]
+    pub fn many(assets: Vec<EvaluatableAssetVc>) -> EvaluatableAssetsVc {
+        EvaluatableAssets(assets).cell()
     }
 
     #[turbo_tasks::function]

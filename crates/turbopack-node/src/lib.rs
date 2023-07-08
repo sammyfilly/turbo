@@ -11,7 +11,7 @@ pub use node_entry::{
     NodeEntry, NodeEntryVc, NodeRenderingEntriesVc, NodeRenderingEntry, NodeRenderingEntryVc,
 };
 use turbo_tasks::{
-    graph::{GraphTraversal, ReverseTopological},
+    graph::{AdjacencyMap, GraphTraversal},
     CompletionVc, CompletionsVc, TryJoinIterExt, ValueToString,
 };
 use turbo_tasks_env::{ProcessEnv, ProcessEnvVc};
@@ -171,7 +171,7 @@ async fn separate_assets(
             .await
     };
 
-    let graph = ReverseTopological::new()
+    let graph = AdjacencyMap::new()
         .skip_duplicates()
         .visit(once(Type::Internal(intermediate_asset)), get_asset_children)
         .await
@@ -181,7 +181,7 @@ async fn separate_assets(
     let mut internal_assets = IndexSet::new();
     let mut external_asset_entrypoints = IndexSet::new();
 
-    for item in graph {
+    for item in graph.into_reverse_topological() {
         match item {
             Type::Internal(asset) => {
                 internal_assets.insert(asset);
@@ -202,7 +202,7 @@ async fn separate_assets(
 /// Emit a basic package.json that sets the type of the package to commonjs.
 /// Currently code generated for Node is CommonJS, while authored code may be
 /// ESM, for example.
-pub(self) fn emit_package_json(dir: FileSystemPathVc) -> CompletionVc {
+fn emit_package_json(dir: FileSystemPathVc) -> CompletionVc {
     emit(
         VirtualAssetVc::new(
             dir.join("package.json"),
@@ -233,10 +233,16 @@ pub async fn get_renderer_pool(
     let entrypoint = intermediate_asset.ident().path();
 
     let Some(cwd) = to_sys_path(cwd).await? else {
-        bail!("can only render from a disk filesystem, but `cwd = {}`", cwd.to_string().await?);
+        bail!(
+            "can only render from a disk filesystem, but `cwd = {}`",
+            cwd.to_string().await?
+        );
     };
     let Some(entrypoint) = to_sys_path(entrypoint).await? else {
-        bail!("can only render from a disk filesystem, but `entrypoint = {}`", entrypoint.to_string().await?);
+        bail!(
+            "can only render from a disk filesystem, but `entrypoint = {}`",
+            entrypoint.to_string().await?
+        );
     };
 
     emit.await?;
