@@ -1,4 +1,8 @@
-use std::future::{Future, IntoFuture};
+use std::{
+    future::{Future, IntoFuture},
+    pin::Pin,
+    task::Poll,
+};
 
 use anyhow::Result;
 use futures::{
@@ -104,6 +108,66 @@ where
 {
     fn try_join(self) -> TryJoin<F> {
         TryJoin {
+            inner: join_all(self.map(|f| f.into_future())),
+        }
+    }
+}
+
+pin_project! {
+    /// Future for the [TryFlatJoinIterExt::try_flat_join] method.
+    pub struct TryFlatJoin<F>
+    where
+        F: Future,
+    {
+        #[pin]
+        inner: JoinAll<F>,
+    }
+}
+
+impl<T, F> Future for TryFlatJoin<F>
+where
+    F: Future<Output = Result<Option<T>>>,
+{
+    type Output = Result<Vec<T>>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
+        match self.project().inner.poll_unpin(cx) {
+            Poll::Ready(res) => Poll::Ready(
+                res.into_iter()
+                    .filter_map(|r| match r {
+                        Ok(Some(v)) => Some(Ok(v)),
+                        Ok(None) => None,
+                        Err(e) => Some(Err(e)),
+                    })
+                    .collect::<Result<Vec<_>>>(),
+            ),
+            Poll::Pending => Poll::Pending,
+        }
+    }
+}
+
+pub trait TryFlatJoinIterExt<T, F>: Iterator
+where
+    F: Future<Output = Result<Option<T>>>,
+{
+    /// Returns a future that resolves to a vector of the outputs of the futures
+    /// in the iterator, or to an error if one of the futures fail.
+    ///
+    /// It also filters out any `Option::None`s
+    ///
+    /// Unlike `Futures::future::try_join_all`, this returns the Error that
+    /// occurs first in the list of futures, not the first to fail in time.
+    fn try_flat_join(self) -> TryFlatJoin<F>;
+}
+
+impl<T, F, IF, It> TryFlatJoinIterExt<T, F> for It
+where
+    F: Future<Output = Result<Option<T>>>,
+    IF: IntoFuture<Output = Result<Option<T>>, IntoFuture = F>,
+    It: Iterator<Item = IF>,
+{
+    fn try_flat_join(self) -> TryFlatJoin<F> {
+        TryFlatJoin {
             inner: join_all(self.map(|f| f.into_future())),
         }
     }

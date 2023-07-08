@@ -33,7 +33,8 @@ function esm(exports, getters) {
     }
 }
 function esmExport(module, exports, getters) {
-    esm(module.namespaceObject = exports, getters);
+    module.namespaceObject = module.exports;
+    esm(exports, getters);
 }
 function dynamicExport(module, exports, object) {
     let reexportedObjects = module[REEXPORTED_OBJECTS];
@@ -60,10 +61,10 @@ function dynamicExport(module, exports, object) {
                 return keys;
             }
         });
-        if (isPromise(module.exports)) {
-            module.namespaceObject = maybeWrapAsyncModulePromise(module.exports, ()=>namespaceObject);
+        if (isPromise(module.namespaceObject)) {
+            module.exports = module.namespaceObject = maybeWrapAsyncModulePromise(module.namespaceObject, ()=>namespaceObject);
         } else {
-            module.namespaceObject = namespaceObject;
+            module.exports = module.namespaceObject = namespaceObject;
         }
     }
     reexportedObjects.push(object);
@@ -102,10 +103,6 @@ function esmImport(sourceModule, id) {
     if (module.error) throw module.error;
     if (module.namespaceObject) return module.namespaceObject;
     const raw = module.exports;
-    if (isPromise(raw)) {
-        module.namespaceObject = maybeWrapAsyncModulePromise(raw, (e)=>interopEsm(e, {}, e.__esModule));
-        return module.namespaceObject;
-    }
     return module.namespaceObject = interopEsm(raw, {}, raw.__esModule);
 }
 function commonJsRequire(sourceModule, id) {
@@ -226,7 +223,7 @@ function asyncModule(module, body, hasAwait) {
             promise["catch"](()=>{});
         }
     });
-    module.exports = promise;
+    module.exports = module.namespaceObject = promise;
     function handleAsyncDependencies(deps) {
         const currentDeps = wrapDeps(deps);
         const getResult = ()=>currentDeps.map((d)=>{
