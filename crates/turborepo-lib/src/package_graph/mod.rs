@@ -158,6 +158,23 @@ impl PackageGraph {
         dependencies
     }
 
+    /// For a given workspace in the repo, returns the set of workspaces
+    /// that depend on this one, excluding those that are unresolved.
+    ///
+    /// Example:
+    ///
+    /// a -> b -> c (external)
+    ///
+    /// dependents(a) = {}
+    /// dependents(b) = {a}
+    /// dependents(c) = None
+    pub fn dependents(&self, node: &WorkspaceNode) -> HashSet<&WorkspaceNode> {
+        let mut dependents =
+            self.transitive_closure_inner(Some(node), &self.workspace_graph, Direction::Inverted);
+        dependents.remove(node);
+        dependents
+    }
+
     /// Returns the transitive closure of the given nodes in the workspace
     /// graph. Note that this includes the nodes themselves. If you want just
     /// the dependencies, or the dependents, use `dependencies` or `dependents`
