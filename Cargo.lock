@@ -9583,6 +9583,7 @@ dependencies = [
  "camino",
  "chrono",
  "dunce",
+ "futures",
  "hex",
  "hmac",
  "lazy_static",
