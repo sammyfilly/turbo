@@ -110,14 +110,12 @@ func (r *Resolver) getFilteredPackages(selectors []*TargetSelector) (*SelectedPa
 			allPackageSelectors = append(allPackageSelectors, selector)
 		}
 	}
-	if len(allPackageSelectors) > 0 || len(prodPackageSelectors) > 0 {
-		if len(allPackageSelectors) > 0 {
-			selected, err := r.filterGraph(allPackageSelectors)
-			if err != nil {
-				return nil, err
-			}
-			return selected, nil
+	if len(allPackageSelectors) > 0 {
+		selected, err := r.filterGraph(allPackageSelectors)
+		if err != nil {
+			return nil, err
 		}
+		return selected, nil
 	}
 	return &SelectedPackages{
 		pkgs: make(util.Set),
