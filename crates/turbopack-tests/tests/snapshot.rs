@@ -33,7 +33,7 @@ use turbopack_build::BuildChunkingContextVc;
 use turbopack_core::{
     asset::{Asset, AssetVc, AssetsVc},
     chunk::{
-        ChunkableModule, ChunkableModuleVc, ChunkingContext, ChunkingContextVc, EvaluatableAssetVc,
+        ChunkableModule, ChunkableModuleVc, ChunkingContextVc, EvaluatableAssetVc,
         EvaluatableAssetsVc,
     },
     compile_time_defines,
@@ -300,7 +300,8 @@ async fn run_test(resource: &str) -> Result<FileSystemPathVc> {
             env,
         )
         .runtime_type(options.runtime_type)
-        .build(),
+        .build()
+        .into(),
         Runtime::Build => BuildChunkingContextVc::builder(
             project_root,
             path,
