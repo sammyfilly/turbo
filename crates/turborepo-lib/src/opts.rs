@@ -143,7 +143,7 @@ fn parse_concurrency(concurrency_raw: &str) -> Result<u32> {
 
 // LegacyFilter holds the options in use before the filter syntax. They have
 // their own rules for how they are compiled into filter expressions.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct LegacyFilter {
     // include_dependencies is whether to include pkg.dependencies in execution (defaults to false)
     include_dependencies: bool,
@@ -175,7 +175,7 @@ impl LegacyFilter {
             self.entrypoints
                 .iter()
                 .map(|pattern| {
-                    if pattern.starts_with("!") {
+                    if pattern.starts_with('!') {
                         pattern.to_owned()
                     } else {
                         format!("{}{}{}{}", prefix, pattern, since, suffix)
@@ -190,7 +190,9 @@ impl LegacyFilter {
 pub struct ScopeOpts {
     pub pkg_inference_root: Option<AnchoredSystemPathBuf>,
     pub legacy_filter: LegacyFilter,
+    pub global_deps: Vec<String>,
     pub filter_patterns: Vec<String>,
+    pub ignore_patterns: Vec<String>,
 }
 
 impl<'a> TryFrom<&'a RunArgs> for ScopeOpts {
@@ -209,20 +211,21 @@ impl<'a> TryFrom<&'a RunArgs> for ScopeOpts {
             since: args.since.clone(),
         };
         Ok(Self {
+            global_deps: args.global_deps.clone(),
             pkg_inference_root,
             legacy_filter,
             filter_patterns: args.filter.clone(),
+            ignore_patterns: args.ignore.clone(),
         })
     }
 }
 
-impl<'a> From<&'a RunArgs> for CacheOpts<'a> {
-    fn from(run_args: &'a RunArgs) -> Self {
-        CacheOpts {
-            override_dir: run_args.cache_dir.as_deref(),
-            skip_filesystem: run_args.remote_only,
-            workers: run_args.cache_workers,
-            ..CacheOpts::default()
-        }
+impl ScopeOpts {
+    pub fn get_filters(&self) -> Vec<String> {
+        [
+            self.filter_patterns.clone(),
+            self.legacy_filter.as_filter_pattern(),
+        ]
+        .concat()
     }
 }

@@ -61,6 +61,16 @@ pub enum WorkspaceNode {
     Workspace(WorkspaceName),
 }
 
+impl WorkspaceNode {
+    /// Returns the name of the workspace if it is not the root workspace.
+    pub fn name(&self) -> Option<&str> {
+        match self {
+            WorkspaceNode::Workspace(WorkspaceName::Other(name)) => Some(name),
+            _ => None,
+        }
+    }
+}
+
 impl PackageGraph {
     pub fn builder(
         repo_root: &AbsoluteSystemPath,
@@ -200,11 +210,13 @@ impl PackageGraph {
 
         let visitor = |event| {
             if let petgraph::visit::DfsEvent::Discover(n, _) = event {
-                visited.insert(
-                    graph
-                        .node_weight(n)
-                        .expect("node index found during dfs doesn't exist"),
-                );
+           
+                    visited.insert(
+                        graph
+                            .node_weight(n)
+                            .expect("node index found during dfs doesn't exist"),
+                    );
+                
             }
         };
 

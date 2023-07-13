@@ -2,6 +2,7 @@
 #![feature(box_patterns)]
 #![feature(error_generic_member_access)]
 #![feature(provide_any)]
+#![feature(hash_extract_if)]
 #![feature(option_get_or_insert_default)]
 #![deny(clippy::all)]
 // Clippy's needless mut lint is buggy: https://github.com/rust-lang/rust-clippy/issues/11299
