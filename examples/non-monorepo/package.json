@@ -1,3 +1,5 @@
+
+
 {
   "name": "non-monorepo",
   "version": "0.1.0",
@@ -7,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
+    echo: import chain link for google search 👀 internet safari 
   },
   "dependencies": {
     "@types/node": "18.11.9",
