@@ -1,12 +1,13 @@
 use std::{
     borrow::Borrow,
-    fmt, fs,
+    fmt,
     io::{self, Write},
     ops::Deref,
     path::{Path, PathBuf},
 };
 
 use camino::{Utf8Components, Utf8Path, Utf8PathBuf};
+use fs_err as fs;
 use path_clean::PathClean;
 use serde::Serialize;
 
@@ -136,36 +137,6 @@ impl AbsoluteSystemPathBuf {
         AnchoredSystemPathBuf::new(self, path)
     }
 
-    /// Resolves `path` with `self` as anchor.
-    ///
-    /// # Arguments
-    ///
-    /// * `path`: The path to be anchored at `self`
-    ///
-    /// returns: AbsoluteSystemPathBuf
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::path::Path;
-    /// use turbopath::{AbsoluteSystemPathBuf, AnchoredSystemPathBuf};
-    /// #[cfg(not(windows))]
-    /// let absolute_path = AbsoluteSystemPathBuf::new("/Users/user").unwrap();
-    /// #[cfg(windows)]
-    /// let absolute_path = AbsoluteSystemPathBuf::new("C:\\Users\\user").unwrap();
-    ///
-    /// let anchored_path = Path::new("Documents").try_into().unwrap();
-    /// let resolved_path = absolute_path.resolve(&anchored_path);
-    ///
-    /// #[cfg(not(windows))]
-    /// assert_eq!(resolved_path.as_str(), "/Users/user/Documents");
-    /// #[cfg(windows)]
-    /// assert_eq!(resolved_path.as_str(), "C:\\Users\\user\\Documents");
-    /// ```
-    pub fn resolve(&self, path: &AnchoredSystemPathBuf) -> AbsoluteSystemPathBuf {
-        AbsoluteSystemPathBuf(self.0.join(path))
-    }
-
     pub fn as_path(&self) -> &Utf8Path {
         self.0.as_path()
     }
@@ -214,9 +185,9 @@ impl AbsoluteSystemPathBuf {
         Ok(self.0.symlink_metadata()?.permissions().readonly())
     }
 
-    pub fn create_with_contents(&self, contents: &str) -> Result<(), io::Error> {
+    pub fn create_with_contents<B: AsRef<[u8]>>(&self, contents: B) -> Result<(), io::Error> {
         let mut f = fs::File::create(self.0.as_path())?;
-        write!(f, "{}", contents)?;
+        f.write_all(contents.as_ref())?;
         Ok(())
     }
 
@@ -233,7 +204,8 @@ impl AbsoluteSystemPathBuf {
     }
 
     pub fn try_exists(&self) -> Result<bool, PathError> {
-        Ok(fs::try_exists(&self.0)?)
+        // try_exists is an experimental API and not yet in fs_err
+        Ok(std::fs::try_exists(&self.0)?)
     }
 
     pub fn extension(&self) -> Option<&str> {

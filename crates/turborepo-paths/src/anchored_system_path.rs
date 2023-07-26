@@ -2,8 +2,9 @@ use std::{fmt, path::Path};
 
 use camino::{Utf8Component, Utf8Path};
 
-use crate::{AnchoredSystemPathBuf, PathError};
+use crate::{AnchoredSystemPathBuf, PathError, RelativeUnixPathBuf};
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AnchoredSystemPath(Utf8Path);
 
 impl ToOwned for AnchoredSystemPath {
@@ -70,5 +71,18 @@ impl AnchoredSystemPath {
 
     pub fn as_path(&self) -> &Path {
         self.0.as_std_path()
+    }
+
+    pub fn to_unix(&self) -> Result<RelativeUnixPathBuf, PathError> {
+        #[cfg(unix)]
+        {
+            return RelativeUnixPathBuf::new(self.0.as_str());
+        }
+        #[cfg(not(unix))]
+        {
+            use crate::IntoUnix;
+            let unix_buf = self.0.into_unix();
+            RelativeUnixPathBuf::new(unix_buf)
+        }
     }
 }
