@@ -6,8 +6,7 @@ use std::{
 use anyhow::Result;
 use itertools::Itertools;
 use petgraph::{
-    stable_graph::NodeIndex,
-    visit::{depth_first_search, EdgeRef, Reversed, Visitable},
+    visit::{depth_first_search, EdgeRef, Reversed},
     Directed, Graph,
 };
 use turbopath::{AbsoluteSystemPath, AnchoredSystemPathBuf};
@@ -210,13 +209,11 @@ impl PackageGraph {
 
         let visitor = |event| {
             if let petgraph::visit::DfsEvent::Discover(n, _) = event {
-           
-                    visited.insert(
-                        graph
-                            .node_weight(n)
-                            .expect("node index found during dfs doesn't exist"),
-                    );
-                
+                visited.insert(
+                    graph
+                        .node_weight(n)
+                        .expect("node index found during dfs doesn't exist"),
+                );
             }
         };
 

@@ -1,5 +1,4 @@
 use std::{
-    borrow::Borrow,
     collections::{HashMap, HashSet},
     str::FromStr,
 };
@@ -466,7 +465,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
                     .unwrap();
                 let globber = wax::Glob::new(path.as_str())?;
                 let packages = self.pkg_graph.workspaces();
-                for (name, _) in packages.filter(|(name, info)| {
+                for (name, _) in packages.filter(|(_name, info)| {
                     let path = info.package_json_path.restore_anchor(self.turbo_root);
                     globber.is_match(path.as_std_path())
                 }) {
