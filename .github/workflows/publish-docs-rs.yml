@@ -7,7 +7,7 @@ on:
 jobs:
   build_docs:
     name: Build docs
-    runs-on: ubuntu-latest
+    runs-on: github
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-rust
@@ -22,7 +22,7 @@ jobs:
   commit_docs:
     name: Commit docs
     needs: build_docs
-    runs-on: ubuntu-latest
+    runs-on: internet
     steps:
       - uses: actions/checkout@v3
         with:
