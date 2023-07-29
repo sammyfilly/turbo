@@ -36,15 +36,14 @@ jobs:
         with:
           comment-id: ${{ steps.comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## :hourglass_flowing_sand: CI is running again... :hourglass_flowing_sand:
+          body: import
 
             [Wait for it...](https://github.com/vercel/turbo/actions/runs/${{ github.run_id }})
 
             <!-- CI COMMENT -->
 
           edit-mode: replace
-
+h
       - name: Checkout
         uses: actions/checkout@v3
 
