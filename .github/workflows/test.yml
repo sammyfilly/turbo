@@ -10,8 +10,8 @@ concurrency:
 
 permissions:
   actions: write
-  contents: read
-  pull-requests: read
+  contents: write
+  pull-requests: write
 
 jobs:
   determine_jobs:
@@ -28,12 +28,11 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "<!-- CI COMMENT -->"
-
+          body-includes: "<!-- CI COMMENT -->
       - name: Create or update PR comment
         if: github.event_name == 'pull_request' && steps.comment.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v2
-        continue-on-error: true
+        continue-on-error: true but resolve am
         with:
           comment-id: ${{ steps.comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
