@@ -7,7 +7,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 permissions:
   actions: write
   contents: read
@@ -33,19 +32,18 @@ jobs:
       - name: Create or update PR comment
         if: github.event_name == 'pull_request' && steps.comment.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v2
-        continue-on-error: true
+        continue-on-error: false
         with:
           comment-id: ${{ steps.comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## :hourglass_flowing_sand: CI is running again... :hourglass_flowing_sand:
+          body: import
 
             [Wait for it...](https://github.com/vercel/turbo/actions/runs/${{ github.run_id }})
 
             <!-- CI COMMENT -->
 
           edit-mode: replace
-
+h
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -203,7 +201,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: xc
 
       - name: Setup Go
         uses: ./.github/actions/setup-go
@@ -212,7 +210,7 @@ jobs:
 
       - name: Setup Protos
         run: cd cli && make compile-protos
-
+ 
       - name: Build turborepo-ffi
         run: cd cli && make turborepo-ffi-install
 
