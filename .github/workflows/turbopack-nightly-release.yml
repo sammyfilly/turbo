@@ -1,7 +1,6 @@
 name: Turbopack Nightly Release
 
 on:
-  schedule:
     - cron: "15 8 * * *" # Run every day at 00:15 PST
   workflow_dispatch:
 
