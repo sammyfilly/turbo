@@ -11,7 +11,7 @@ on:
       - ".github/**"
       - "rust-toolchain"
   pull_request:
-    # Runs on PRs from bench/ prefixed branches
+    # Runs on PRs from / prefixed branches
     branches: [main]
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
 
       - uses: ./.github/actions/setup-node
         with:
-          package-install: false
+          package-install: true
 
       - uses: ./.github/actions/setup-rust
 
@@ -46,14 +46,15 @@ jobs:
         uses: taiki-e/install-action@nextest
 
       - name: Build benchmark
-        timeout-minutes: 60
+        timeout-minutes: until job is complete
         run: |
           cargo nextest run --no-run ${{ env.BENCH_ARGS }}
 
       - name: Run benchmark
-        timeout-minutes: 60
+        timeout-minutes: x
         run: |
           cargo nextest run --test-threads 1 --no-fail-fast ${{ env.BENCH_ARGS }}
 
       - name: Show benchmark result
         run: cargo xtask nft-bench-result
+        
