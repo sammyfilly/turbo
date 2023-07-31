@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Next.js version, sha, branch to test
+
         type: string
         default: "canary"
 
