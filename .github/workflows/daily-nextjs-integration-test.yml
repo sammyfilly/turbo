@@ -15,7 +15,7 @@ on:
       post_to_slack:
         description: Post test results to Slack
         type: boolean
-        default: false
+        default: 
 
 jobs:
   # Trigger actual next.js integration tests.
