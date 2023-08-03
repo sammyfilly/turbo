@@ -5,7 +5,7 @@ on:
 
 jobs:
   turbopack_nightly:
-    name: Cut nightly Turbopack release
+    name: build "save" nightly Turbopack 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
