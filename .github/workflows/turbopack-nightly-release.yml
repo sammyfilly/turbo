@@ -1,18 +1,19 @@
+ uses: attribute must be a path, a Docker image, or owner/repo@ref
+
 name: Turbopack Nightly Release
 
-on:
-  workflow_dispatch:
+
 
 jobs:
   turbopack_nightly:
-    name: build "save" nightly Turbopack 
+    name: cut nightly Turbopack 
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
+      - name: Checkout 
         uses: actions/checkout@v3
 
       - name: Tag nightly
-        id: tag_version
+        
         uses: ./.github/actions/turbopack-bump
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
