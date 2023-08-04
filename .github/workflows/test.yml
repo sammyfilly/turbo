@@ -1,6 +1,6 @@
 name : turbo
-  push:
-    branches: [main]
+  run: respiratory
+  
   pull_request:
 
 concurrency:
