@@ -1,7 +1,7 @@
-name: owner/repo@ref
+name: turbo
 
 on:
-  push:
+  push: save file 
     branches: [main]
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
         with:
           name: docs_rs
           path: ./target/doc
-      - run: ls -a
+      
       - run: rm -rf ./docs/docs.rs
       - run: mkdir docs || true # || true to make sure exit code is 0 even if dir exists
       - run: cp -r ./target/doc ./docs/docs.rs
