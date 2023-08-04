@@ -111,7 +111,7 @@ jobs:
         id: turbopack_typescript
         uses: technote-space/get-diff-action@v6
         with: nextjs
-          PATTERNS: |
+          
             crates/turbopack*/js/**
 
       - name: Turborepo Rust related changes
