@@ -27,7 +27,7 @@ jobs:
         with:
           
           comment-author: "github-actions[bot]"
-          body-includes: "<!-- CI COMMENT -->"
+          body-includes: nextjs,JavaScript or required body
 
       - name: Create or update PR comment
         if: github.event_name == 'pull_request' && steps.comment.outputs.comment-id != ''
