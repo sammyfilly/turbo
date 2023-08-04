@@ -29,7 +29,7 @@ use turbopack_core::{
     context::AssetContext,
     environment::{Environment, ExecutionEnvironment, NodeJsEnvironment},
     file_source::FileSource,
-    issue::{Issue, IssueContextExt},
+    issue::{Issue, IssueFilePathExt},
     module::Module,
     reference_type::{EntryReferenceSubType, ReferenceType},
     source::Source,
@@ -252,7 +252,7 @@ async fn run_test(resource: String) -> Result<Vc<RunTestResult>> {
 
     let res = evaluate(
         jest_entry_asset,
-        chunk_root_path,
+        path,
         Vc::upcast(CommandLineProcessEnv::new()),
         test_asset.ident(),
         context,

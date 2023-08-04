@@ -255,6 +255,12 @@ function externalRequire(id, esm = false) {
 externalRequire.resolve = (id, options)=>{
     return require.resolve(id, options);
 };
+async function loadWebAssemblyFromPath(path, importsObj) {
+    const { readFile } = require("fs/promises");
+    const buffer = await readFile(path);
+    const { instance } = await WebAssembly.instantiate(buffer, importsObj);
+    return instance.exports;
+}
 ;
 var SourceType;
 (function(SourceType) {
@@ -271,8 +277,7 @@ function loadChunk(chunkPath) {
     if (!chunkPath.endsWith(".js")) {
         return;
     }
-    const resolved = require.resolve(path.resolve(RUNTIME_ROOT, chunkPath));
-    delete require.cache[resolved];
+    const resolved = path.resolve(RUNTIME_ROOT, chunkPath);
     const chunkModules = require(resolved);
     for (const [moduleId, moduleFactory] of Object.entries(chunkModules)){
         if (!moduleFactories[moduleId]) {
@@ -290,6 +295,10 @@ function loadChunkAsync(source, chunkPath) {
         }
         resolve();
     });
+}
+function loadWebAssembly(chunkPath, imports) {
+    const resolved = path.resolve(RUNTIME_ROOT, chunkPath);
+    return loadWebAssemblyFromPath(resolved, imports);
 }
 function instantiateModule(id, source) {
     const moduleFactory = moduleFactories[id];
@@ -335,7 +344,7 @@ function instantiateModule(id, source) {
             y: externalImport,
             f: requireContext.bind(null, module1),
             i: esmImport.bind(null, module1),
-            s: esm.bind(null, module1.exports),
+            s: esmExport.bind(null, module1, module1.exports),
             j: dynamicExport.bind(null, module1, module1.exports),
             v: exportValue.bind(null, module1),
             n: exportNamespace.bind(null, module1),
@@ -345,6 +354,7 @@ function instantiateModule(id, source) {
                 type: SourceType.Parent,
                 parentId: id
             }),
+            w: loadWebAssembly,
             g: globalThis,
             __dirname: module1.id.replace(/(^|\/)[\/]+$/, "")
         });

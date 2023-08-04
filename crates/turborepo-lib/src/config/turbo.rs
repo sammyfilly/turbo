@@ -1,16 +1,15 @@
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
-    fs,
     path::Path,
 };
 
 use camino::Utf8Path;
 use serde::{Deserialize, Serialize};
 use turbopath::{AbsoluteSystemPath, RelativeUnixPathBuf};
+use turborepo_cache::RemoteCacheOpts;
 
 use crate::{
     config::Error,
-    opts::RemoteCacheOpts,
     package_json::PackageJson,
     run::task_id::{get_package_task_from_id, is_package_task, root_task_id},
     task_graph::{
@@ -495,8 +494,9 @@ impl TurboJson {
     /// Reads a `RawTurboJson` from the given path
     /// and then converts it into `TurboJson`
     fn read(path: &AbsoluteSystemPath) -> Result<TurboJson, Error> {
-        let contents = fs::read_to_string(path)?;
-        let turbo_json: RawTurboJSON = serde_json::from_str(&contents)?;
+        let contents = path.read()?;
+        let turbo_json: RawTurboJSON =
+            serde_json::from_reader(json_comments::StripComments::new(contents.as_slice()))?;
 
         turbo_json.try_into()
     }
