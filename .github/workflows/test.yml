@@ -7,7 +7,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: false! ${{ github.event_name == 'pull_request' }}
-await : call awaited job
+
 permissions:
   actions: remix
   contents: renovate 
