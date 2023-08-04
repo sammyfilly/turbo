@@ -582,7 +582,7 @@ pub(crate) async fn analyze_ecmascript_module(
         }
 
         let async_module = AsyncModule {
-            module,
+            placeable: Vc::upcast(module),
             references: import_references.iter().copied().collect(),
             has_top_level_await,
         }
@@ -601,7 +601,7 @@ pub(crate) async fn analyze_ecmascript_module(
         EcmascriptExports::EsmExports(esm_exports)
     } else if matches!(specified_type, SpecifiedModuleType::EcmaScript) {
         let async_module = AsyncModule {
-            module,
+            placeable: Vc::upcast(module),
             references: import_references.iter().copied().collect(),
             has_top_level_await,
         }
@@ -644,7 +644,7 @@ pub(crate) async fn analyze_ecmascript_module(
             DetectedDynamicExportType::Value => EcmascriptExports::Value,
             DetectedDynamicExportType::UsingModuleDeclarations => {
                 let async_module = AsyncModule {
-                    module,
+                    placeable: Vc::upcast(module),
                     references: import_references.iter().copied().collect(),
                     has_top_level_await,
                 }
@@ -1751,12 +1751,15 @@ async fn handle_free_var_reference(
         }
         FreeVarReference::EcmaScriptModule {
             request,
-            context,
+            lookup_path: context,
             export,
         } => {
             let esm_reference = EsmAssetReference::new(
                 context.map_or(state.origin, |context| {
-                    Vc::upcast(PlainResolveOrigin::new(state.origin.context(), context))
+                    Vc::upcast(PlainResolveOrigin::new(
+                        state.origin.asset_context(),
+                        context,
+                    ))
                 }),
                 Request::parse(Value::new(request.clone().into())),
                 Default::default(),
