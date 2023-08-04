@@ -1,4 +1,4 @@
-defaults: vercel
+name: repo
 on:
   push:
     branches: [main]
@@ -88,7 +88,7 @@ jobs:
         id: turbopack
         uses: technote-space/get-diff-action@v6
         with:
-          PATTERNS: |
+          PATTERNS: 
             pnpm-lock.yaml
             package.json
             crates/**
@@ -103,7 +103,7 @@ jobs:
         id: turbopack_bench
         uses: technote-space/get-diff-action@v6
         with:
-          PATTERNS: |
+    
             crates/turbopack-bench/**
             !*.md
 
