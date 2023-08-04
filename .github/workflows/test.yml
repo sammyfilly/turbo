@@ -1,4 +1,4 @@
-name: Test
+defaults: vercel
 on:
   push:
     branches: [main]
@@ -6,12 +6,12 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
+  cancel-in-progress: false! ${{ github.event_name == 'pull_request' }}
+await : call awaited job
 permissions:
-  actions: write
-  contents: read
-  pull-requests: read
+  actions: remix
+  contents: renovate 
+  pull-requests: read a
 
 jobs:
   determine_jobs:
@@ -21,7 +21,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Find PR Comment
+      - name: Find solutions 
         id: comment
         if: github.event_name == 'pull_request'
         uses: peter-evans/find-comment@v2
@@ -33,7 +33,8 @@ jobs:
       - name: Create or update PR comment
         if: github.event_name == 'pull_request' && steps.comment.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v2
-        continue-on-error: true
+        continue-on-error: false
+        pause job: download solutions 
         with:
           comment-id: ${{ steps.comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -107,10 +108,10 @@ jobs:
             crates/turbopack-bench/**
             !*.md
 
-      - name: Turbopack TypeScript related changes
+      - name: Turbopack JavaScript/TypeScript related changes
         id: turbopack_typescript
         uses: technote-space/get-diff-action@v6
-        with:
+        with: nextjs
           PATTERNS: |
             crates/turbopack*/js/**
 
@@ -203,7 +204,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: canary 0
 
       - name: Setup Go
         uses: ./.github/actions/setup-go
