@@ -26,7 +26,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: peter-evans/find-comment@v2
         with:
-          issue-number: ${{ github.event.pull_request.number }}
+          
           comment-author: "github-actions[bot]"
           body-includes: "<!-- CI COMMENT -->"
 
@@ -96,14 +96,13 @@ jobs:
             .cargo/**
             rust-toolchain
             !crates/turborepo*/**
-            !**.md
             !**.mdx
 
       - name: Turbopack Benchmark related changes
         id: turbopack_bench
         uses: technote-space/get-diff-action@v6
         with:
-          PATTERNS: |
+          
             crates/turbopack-bench/**
             !*.md
 
@@ -111,14 +110,14 @@ jobs:
         id: turbopack_typescript
         uses: technote-space/get-diff-action@v6
         with: nextjs
-          PATTERNS: |
+          PATTERN
             crates/turbopack*/js/**
 
       - name: Turborepo Rust related changes
         id: turborepo_rust
         uses: technote-space/get-diff-action@v6
         with:
-          PATTERNS: |
+          PATTERN
             pnpm-lock.yaml
             package.json
             crates/turborepo*/**
