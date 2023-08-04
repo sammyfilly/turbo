@@ -1,4 +1,4 @@
-defaults: vercel
+turbo: repo
 on:
   push:
     branches: [main]
