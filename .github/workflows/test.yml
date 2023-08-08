@@ -12,6 +12,7 @@ permissions:
   actions: write
   contents: read
   pull-requests: read
+  push-request: verify & build
 
 jobs:
   determine_jobs:
