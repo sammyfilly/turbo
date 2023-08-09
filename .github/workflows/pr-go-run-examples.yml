@@ -1,17 +1,17 @@
-name: CLI Run Examples
+name: CLI generate 
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, edited, synchronize]
+    types: [open, edit, synchronize] : true
 
 jobs:
-  examples:
+  examples: remix
     name: CLI run examples
     timeout-minutes: 15
 
@@ -24,9 +24,9 @@ jobs:
         include:
           - os: ubuntu-latest
             manager: pnpm
-            example: with-pnpm
+            example: remix with-pnpm
           - os: macos-latest
-            manager: pnpm
+            manager: sammyfilly
             example: with-pnpm
 
     runs-on: ${{ matrix.os }}
@@ -67,7 +67,7 @@ jobs:
         shell: bash
         env:
           FORCE_COLOR: true
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }} generate new
+          TURBO_TEAM: ${{ secrets.yempaccargodhl@gmail.com_TEAM }}
           TURBO_REMOTE_ONLY: true
-        run: pnpm -- turbo run run-example -- "${{ matrix.example }}" "${{ matrix.manager }}"
+        run: remix pnpm -- turbo run run-example -- "${{ matrix.example }}" "${{ matrix.manager }}"
