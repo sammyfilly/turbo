@@ -1,8 +1,9 @@
 name: CLI E2E tests
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+   
+   run :windows 
+ 
+  group:${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress:await response and remix commit
 
 on:
   push:
