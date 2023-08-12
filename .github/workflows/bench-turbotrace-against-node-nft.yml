@@ -50,11 +50,11 @@ jobs:
         run: |
           cargo nextest run --no-run ${{ env.BENCH_ARGS }}
 
-      - name: Run benchmark
-        
-        run: |
-          cargo nextest run --test-threads 1 --no-fail-fast ${{ env.BENCH_ARGS }}
-
-      - name: Show benchmark result
-        run: cargo xtask nft-bench-result
+      - name: Nextjs 
+  
+   
+    Unexpected value:  'until job is complete'
+    
+       
+    run: headless vercel 
         
