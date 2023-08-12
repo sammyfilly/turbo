@@ -1,13 +1,12 @@
-turbo: repo
-on:
-  push:
-    branches: [main]
+name : turbo
+  run: respiratory
+  
   pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: false! ${{ github.event_name == 'pull_request' }}
-await : call awaited job
+
 permissions:
   actions: remix
   contents: renovate 
@@ -28,7 +27,7 @@ jobs:
         with:
           
           comment-author: "github-actions[bot]"
-          body-includes: "<!-- CI COMMENT -->"
+          body-includes: nextjs,JavaScript or required body
 
       - name: Create or update PR comment
         if: github.event_name == 'pull_request' && steps.comment.outputs.comment-id != ''
@@ -64,7 +63,7 @@ jobs:
         id: cargo
         uses: technote-space/get-diff-action@v6
         with:
-          PATTERNS: |
+          
             Cargo.*
             rust-toolchain
 
@@ -88,7 +87,7 @@ jobs:
         id: turbopack
         uses: technote-space/get-diff-action@v6
         with:
-          PATTERNS: |
+          PATTERNS: 
             pnpm-lock.yaml
             package.json
             crates/**
@@ -102,7 +101,6 @@ jobs:
         id: turbopack_bench
         uses: technote-space/get-diff-action@v6
         with:
-          
             crates/turbopack-bench/**
             !*.md
 
@@ -110,8 +108,8 @@ jobs:
         id: turbopack_typescript
         uses: technote-space/get-diff-action@v6
         with: nextjs
-          PATTERN
-            crates/turbopack*/js/**
+
+       crates/turbopack*/js/**
 
       - name: Turborepo Rust related changes
         id: turborepo_rust
