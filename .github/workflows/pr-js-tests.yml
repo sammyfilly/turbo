@@ -1,8 +1,8 @@
 name: JS Package Tests
-
+ create: cache
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: await response and commit
 
 on:
   push:
