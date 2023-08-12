@@ -76,8 +76,8 @@ jobs:
             pnpm-lock.yaml
             package.json
             Cargo.**
+            vercel.*
 
-            shim/**
             xtask/**
             .cargo/**
             rust-toolchain
