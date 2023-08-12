@@ -1,7 +1,7 @@
 id: no-context
 message: Don't name variables `context`.
 note: Use a more specific name, such as chunking_context, asset_context, etc.
-severity: warning
+severity: error
 language: Rust
 rule:
   regex: \bcontext\b
@@ -25,7 +25,6 @@ ignores:
   - "./crates/turbopack-ecmascript-hmr-protocol/**"
   - "./crates/turbopack-ecmascript-plugins/**"
   - "./crates/turbopack-ecmascript-runtime/**"
-  - "./crates/turbopack-ecmascript/**"
   - "./crates/turbopack-json/**"
   - "./crates/turbopack-mdx/**"
   - "./crates/turbopack-node/**"

@@ -4,15 +4,25 @@ mod global_hash;
 mod scope;
 pub mod task_id;
 
+use std::io::IsTerminal;
+
 use anyhow::{Context as ErrorContext, Result};
 use tracing::{debug, info};
 use turborepo_cache::{http::APIAuth, AsyncCache};
 use turborepo_env::EnvironmentVariableMap;
 use turborepo_scm::SCM;
+use turborepo_ui::UI;
 
+use self::task_id::TaskName;
 use crate::{
-    commands::CommandBase, config::TurboJson, daemon::DaemonConnector, manager::Manager,
-    opts::Opts, package_graph::PackageGraph, package_json::PackageJson,
+    commands::CommandBase,
+    config::TurboJson,
+    daemon::DaemonConnector,
+    engine::EngineBuilder,
+    manager::Manager,
+    opts::Opts,
+    package_graph::{PackageGraph, WorkspaceName},
+    package_json::PackageJson,
     run::global_hash::get_global_hash_inputs,
 };
 
@@ -61,7 +71,8 @@ impl Run {
         }
 
         // There's some warning handling code in Go that I'm ignoring
-        if self.base.ui.is_ci() && !opts.run_opts.no_daemon {
+        let is_ci_and_not_tty = turborepo_ci::is_ci() && !std::io::stdout().is_terminal();
+        if is_ci_and_not_tty && !opts.run_opts.no_daemon {
             info!("skipping turbod since we appear to be in a non-interactive context");
         } else if !opts.run_opts.no_daemon {
             let connector = DaemonConnector {
@@ -82,7 +93,7 @@ impl Run {
 
         let scm = SCM::new(&self.base.repo_root);
 
-        let _filtered_pkgs =
+        let filtered_pkgs =
             scope::resolve_packages(&opts.scope_opts, &self.base, &pkg_dep_graph, &scm)?;
 
         // TODO: Add this back once scope/filter is implemented.
@@ -131,6 +142,31 @@ impl Run {
         )?;
 
         info!("created cache");
+        let _engine = EngineBuilder::new(
+            &self.base.repo_root,
+            &pkg_dep_graph,
+            opts.run_opts.single_package,
+        )
+        .with_root_tasks(root_turbo_json.pipeline.keys().cloned())
+        .with_turbo_jsons(Some(
+            Some((WorkspaceName::Root, root_turbo_json.clone()))
+                .into_iter()
+                .collect(),
+        ))
+        .with_tasks_only(opts.run_opts.only)
+        .with_workspaces(
+            filtered_pkgs
+                .iter()
+                .map(|workspace| WorkspaceName::from(workspace.as_str()))
+                .collect(),
+        )
+        .with_tasks(
+            opts.run_opts
+                .tasks
+                .iter()
+                .map(|task| TaskName::from(task.as_str()).into_owned()),
+        )
+        .build()?;
 
         Ok(())
     }
@@ -142,13 +178,13 @@ mod test {
     use anyhow::Result;
     use tempfile::tempdir;
     use turbopath::AbsoluteSystemPathBuf;
+    use turborepo_ui::UI;
 
     use crate::{
         cli::{Command, RunArgs},
         commands::CommandBase,
         get_version,
         run::Run,
-        ui::UI,
         Args,
     };
 
