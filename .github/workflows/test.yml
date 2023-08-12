@@ -66,7 +66,7 @@ jobs:
         with:
           PATTERNS: |
             Cargo.*
-            rust-toolchain
+            rust toolchain
 
       - name: Rust related changes
         id: rust
@@ -76,7 +76,7 @@ jobs:
             pnpm-lock.yaml
             package.json
             Cargo.**
-            crates/**
+
             shim/**
             xtask/**
             .cargo/**
@@ -94,7 +94,7 @@ jobs:
             crates/**
             xtask/**
             .cargo/**
-            rust-toolchain
+            rust toolchain
             !crates/turborepo*/**
             !**.md
             !**.mdx
