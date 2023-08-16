@@ -167,11 +167,10 @@ impl LegacyFilter {
                 Vec::new()
             }
         } else {
-            let since = if let Some(since) = self.since.as_ref() {
-                format!("...{}", since)
-            } else {
-                "".to_string()
-            };
+            let since = self
+                .since
+                .as_ref()
+                .map_or_else(String::new, |s| format!("...{}", s));
             self.entrypoints
                 .iter()
                 .map(|pattern| {
