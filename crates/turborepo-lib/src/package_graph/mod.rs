@@ -173,18 +173,18 @@ impl PackageGraph {
     ///
     /// a -> b -> c (external)
     ///
-    /// dependents(a) = {}
-    /// dependents(b) = {a}
-    /// dependents(c) = None
-    pub fn dependents(&self, node: &WorkspaceNode) -> HashSet<&WorkspaceNode> {
-        let mut dependents = self.transitive_closure_inner(Some(node), Direction::Inverted);
-        dependents.remove(node);
-        dependents
+    /// ancestors(a) = {}
+    /// ancestors(b) = {a}
+    /// ancestors(c) = None
+    pub fn ancestors(&self, node: &WorkspaceNode) -> HashSet<&WorkspaceNode> {
+        let mut ancestors = self.transitive_closure_inner(Some(node), Direction::Inverted);
+        ancestors.remove(node);
+        ancestors
     }
 
     /// Returns the transitive closure of the given nodes in the workspace
     /// graph. Note that this includes the nodes themselves. If you want just
-    /// the dependencies, or the dependents, use `dependencies` or `dependents`
+    /// the dependencies, or the ancestors, use `dependencies` or `ancestors`
     pub fn transitive_closure<'a, 'b, I: IntoIterator<Item = &'b WorkspaceNode>>(
         &'a self,
         nodes: I,

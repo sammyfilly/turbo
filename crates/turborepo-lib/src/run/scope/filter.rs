@@ -274,7 +274,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
                 }
 
                 if selector.include_dependents {
-                    let dependents = self.pkg_graph.dependents(&node);
+                    let dependents = self.pkg_graph.ancestors(&node);
                     for dependent in dependents.iter().flat_map(|i| i.name().map(str::to_string)) {
                         walked_dependents.insert(dependent.clone());
 
