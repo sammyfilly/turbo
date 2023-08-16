@@ -68,6 +68,13 @@ impl WorkspaceNode {
             _ => None,
         }
     }
+
+    pub fn as_workspace(&self) -> Option<&WorkspaceName> {
+        match self {
+            WorkspaceNode::Workspace(name) => Some(name),
+            _ => None,
+        }
+    }
 }
 
 impl PackageGraph {

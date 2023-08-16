@@ -14,7 +14,7 @@ use super::{
     target_selector::{InvalidSelectorError, TargetSelector},
 };
 use crate::{
-    package_graph::{self, PackageGraph},
+    package_graph::{self, PackageGraph, WorkspaceName, WorkspaceNode},
     run::task_id::ROOT_PKG_NAME,
 };
 
@@ -81,12 +81,9 @@ impl PackageInference {
         } else if self.package_name.is_none() {
             // fallback: the user didn't set a parent directory and we didn't find a single
             // package, so use the directory we inferred and select all subdirectories
-            let doublestar = {
-                let mut tmp = AnchoredSystemPathBuf::default();
-                tmp.push("**");
-                tmp
-            };
-            selector.parent_dir = self.directory_root.join(&doublestar);
+            let mut parent_dir = self.directory_root.clone();
+            parent_dir.push("**");
+            selector.parent_dir = parent_dir;
         }
     }
 }
@@ -145,7 +142,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
     pub(crate) fn resolve(
         &self,
         patterns: &Vec<String>,
-    ) -> Result<HashSet<String>, ResolutionError> {
+    ) -> Result<HashSet<WorkspaceName>, ResolutionError> {
         // inference is None only if we are in the root
         let is_all_packages = patterns.is_empty() && self.inference.is_none();
 
@@ -153,7 +150,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
             // return all packages in the workspace
             self.pkg_graph
                 .workspaces()
-                .map(|(name, _)| name.to_string())
+                .map(|(name, _)| name.to_owned())
                 .collect()
         } else {
             self.get_packages_from_patterns(patterns)?
@@ -161,7 +158,8 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
 
         // if the root package is in the filtered packages, remove it
         if let Some(pkg_name) = &self.pkg_graph.root_package_json().name {
-            filter_patterns.remove(pkg_name);
+            let name = WorkspaceName::Other(pkg_name.to_owned());
+            filter_patterns.remove(&name);
         }
 
         Ok(filter_patterns)
@@ -170,7 +168,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
     fn get_packages_from_patterns(
         &self,
         patterns: &[String],
-    ) -> Result<HashSet<String>, ResolutionError> {
+    ) -> Result<HashSet<WorkspaceName>, ResolutionError> {
         let selectors = patterns
             .iter()
             .map(|pattern| TargetSelector::from_str(pattern))
@@ -182,7 +180,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
     fn get_filtered_packages(
         &self,
         selectors: Vec<TargetSelector>,
-    ) -> Result<HashSet<String>, ResolutionError> {
+    ) -> Result<HashSet<WorkspaceName>, ResolutionError> {
         let (_prod_selectors, all_selectors) = self
             .apply_inference(selectors)
             .into_iter()
@@ -218,7 +216,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
     fn filter_graph(
         &self,
         selectors: Vec<TargetSelector>,
-    ) -> Result<HashSet<String>, ResolutionError> {
+    ) -> Result<HashSet<WorkspaceName>, ResolutionError> {
         let (include_selectors, exclude_selectors) =
             selectors.into_iter().partition::<Vec<_>, _>(|t| !t.exclude);
 
@@ -227,8 +225,9 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
         } else {
             self.pkg_graph
                 .workspaces()
-                .filter(|(name, _)| !name.to_string().eq(ROOT_PKG_NAME)) // the root package has to be explicitly included
-                .map(|(name, _)| name.to_string())
+                // todo: a type-level way of dealing with non-root packages
+                .filter(|(name, _)| WorkspaceName::Root.eq(name)) // the root package has to be explicitly included
+                .map(|(name, _)| name.to_owned())
                 .collect()
         };
 
@@ -242,7 +241,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
     fn filter_graph_with_selectors(
         &self,
         selectors: Vec<TargetSelector>,
-    ) -> Result<HashSet<String>, ResolutionError> {
+    ) -> Result<HashSet<WorkspaceName>, ResolutionError> {
         let mut unmatched_selectors = Vec::new();
         let mut walked_dependencies = HashSet::new();
         let mut walked_dependents = HashSet::new();
@@ -258,15 +257,13 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
             }
 
             for package in selector_packages {
-                let node = package_graph::WorkspaceNode::Workspace(
-                    package_graph::WorkspaceName::Other(package.clone()),
-                );
+                let node = package_graph::WorkspaceNode::Workspace(package.clone());
 
                 if selector.include_dependencies {
                     let dependencies = self.pkg_graph.dependencies(&node);
                     let dependencies = dependencies
                         .iter()
-                        .flat_map(|i| i.name().map(str::to_string))
+                        .flat_map(|i| i.as_workspace().map(ToOwned::to_owned))
                         .collect::<Vec<_>>();
 
                     // flatmap through the option, the set, and then the optional package name
@@ -275,21 +272,22 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
 
                 if selector.include_dependents {
                     let dependents = self.pkg_graph.ancestors(&node);
-                    for dependent in dependents.iter().flat_map(|i| i.name().map(str::to_string)) {
+                    for dependent in dependents
+                        .iter()
+                        .flat_map(|i| i.as_workspace().map(ToOwned::to_owned))
+                    {
                         walked_dependents.insert(dependent.clone());
 
                         // get the dependent's dependencies
                         if selector.include_dependencies {
-                            let dependent_node = package_graph::WorkspaceNode::Workspace(
-                                package_graph::WorkspaceName::Other(dependent),
-                            );
+                            let dependent_node = package_graph::WorkspaceNode::Workspace(dependent);
 
                             let dependent_dependencies =
                                 self.pkg_graph.dependencies(&dependent_node);
 
                             let x = dependent_dependencies
                                 .iter()
-                                .flat_map(|i| i.name().map(str::to_string))
+                                .flat_map(|i| i.as_workspace().map(ToOwned::to_owned))
                                 .collect::<HashSet<_>>();
 
                             walked_dependent_dependencies.extend(x);
@@ -323,7 +321,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
     fn filter_graph_with_selector(
         &self,
         selector: &TargetSelector,
-    ) -> Result<HashSet<String>, ResolutionError> {
+    ) -> Result<HashSet<WorkspaceName>, ResolutionError> {
         if selector.match_dependencies {
             self.filter_subtrees_with_selector(selector)
         } else {
@@ -343,12 +341,12 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
     fn filter_subtrees_with_selector(
         &self,
         selector: &TargetSelector,
-    ) -> Result<HashSet<String>, ResolutionError> {
+    ) -> Result<HashSet<WorkspaceName>, ResolutionError> {
         let mut entry_packages = HashSet::new();
 
         for (name, info) in self.pkg_graph.workspaces() {
             if selector.parent_dir == AnchoredSystemPathBuf::default() {
-                entry_packages.insert(name.to_string());
+                entry_packages.insert(name.to_owned());
             } else {
                 let path = self
                     .turbo_root
@@ -359,7 +357,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
                 let matches = matcher.is_match(p.as_std_path());
 
                 if matches {
-                    entry_packages.insert(name.to_string());
+                    entry_packages.insert(name.to_owned());
                 }
             }
         }
@@ -382,9 +380,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
                 continue;
             }
 
-            let workspace_node = package_graph::WorkspaceNode::Workspace(
-                package_graph::WorkspaceName::Other(package.clone()),
-            );
+            let workspace_node = package_graph::WorkspaceNode::Workspace(package);
 
             let dependencies = self.pkg_graph.dependencies(&workspace_node);
 
@@ -394,9 +390,8 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
                     break;
                 }
 
-                let changed_node = package_graph::WorkspaceNode::Workspace(
-                    package_graph::WorkspaceName::Other(changed_package.clone()),
-                );
+                let changed_node =
+                    package_graph::WorkspaceNode::Workspace(changed_package.to_owned());
 
                 if dependencies.contains(&changed_node) {
                     roots.insert(package.clone());
@@ -412,7 +407,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
     fn filter_nodes_with_selector(
         &self,
         selector: &TargetSelector,
-    ) -> Result<HashSet<String>, ResolutionError> {
+    ) -> Result<HashSet<WorkspaceName>, ResolutionError> {
         let mut entry_packages = HashSet::new();
         let mut selector_valid = false;
 
@@ -429,7 +424,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
             let package_path_lookup = self
                 .pkg_graph
                 .workspaces()
-                .map(|(name, entry)| (name.to_string(), entry.package_json_path()))
+                .map(|(name, entry)| (name, entry.package_json_path()))
                 .collect::<HashMap<_, _>>();
 
             for package in changed_packages {
@@ -438,7 +433,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
                     continue;
                 };
 
-                if package == ROOT_PKG_NAME {
+                if package == WorkspaceName::Root {
                     // The root package changed, only add it if
                     // the parentDir is equivalent to the root
                     if globber.matched(&self.turbo_root.into()).is_some() {
@@ -447,7 +442,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
                 } else {
                     let path = package_path_lookup
                         .get(&package)
-                        .ok_or(ResolutionError::MissingPackageInfo(package.clone()))?;
+                        .ok_or(ResolutionError::MissingPackageInfo(package.to_string()))?;
 
                     let path = self.turbo_root.resolve(path);
                     if globber.is_match(path.as_std_path()) {
@@ -459,7 +454,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
             selector_valid = true;
             if selector.parent_dir == AnchoredSystemPathBuf::from_raw(".").expect("valid anchored")
             {
-                entry_packages.insert(ROOT_PKG_NAME.to_owned());
+                entry_packages.insert(WorkspaceName::Root);
             } else {
                 let path = self
                     .turbo_root
@@ -471,7 +466,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
                     let path = self.turbo_root.resolve(&info.package_json_path);
                     globber.is_match(path.as_std_path())
                 }) {
-                    entry_packages.insert(name.to_string());
+                    entry_packages.insert(name.to_owned());
                 }
             }
         }
@@ -482,7 +477,7 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
                     &selector.name_pattern,
                     self.pkg_graph
                         .workspaces()
-                        .map(|(name, _)| name.to_string())
+                        .map(|(name, _)| name.to_owned())
                         .collect(),
                 )?;
                 selector_valid = true;
@@ -506,17 +501,17 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
         &self,
         from_ref: &str,
         to_ref: &str,
-    ) -> Result<HashSet<String>, turborepo_scm::Error> {
+    ) -> Result<HashSet<WorkspaceName>, turborepo_scm::Error> {
         self.change_detector.changed_packages(from_ref, to_ref)
     }
 
     fn match_package_names_to_vertices(
         &self,
         name_pattern: &str,
-        mut entry_packages: HashSet<String>,
-    ) -> Result<HashSet<String>, ResolutionError> {
+        mut entry_packages: HashSet<WorkspaceName>,
+    ) -> Result<HashSet<WorkspaceName>, ResolutionError> {
         // add the root package to the entry packages
-        entry_packages.insert(ROOT_PKG_NAME.to_owned());
+        entry_packages.insert(WorkspaceName::Root);
 
         Ok(match_package_names(name_pattern, entry_packages)?)
     }
@@ -528,11 +523,11 @@ impl<'a, T: PackageChangeDetector> FilterResolver<'a, T> {
 /// the pattern is normalized, replacing `\*` with `.*`
 fn match_package_names(
     name_pattern: &str,
-    mut entry_packages: HashSet<String>,
-) -> Result<HashSet<String>, regex::Error> {
+    mut entry_packages: HashSet<WorkspaceName>,
+) -> Result<HashSet<WorkspaceName>, regex::Error> {
     let matcher = SimpleGlob::new(name_pattern)?;
     let matched_packages = entry_packages
-        .extract_if(|e| matcher.is_match(e.as_str()))
+        .extract_if(|e| matcher.is_match(&e.to_string()))
         .collect::<HashSet<_>>();
 
     // if we got no matches and the pattern is not scoped
@@ -546,7 +541,7 @@ fn match_package_names(
 
         let (first_item, multiple_matches) = {
             let mut scoped_matched_packages =
-                entry_packages.extract_if(|e| scoped_matcher.is_match(e.as_str())); // we can extract again since the original set is untouched
+                entry_packages.extract_if(|e| scoped_matcher.is_match(&e.to_string())); // we can extract again since the original set is untouched
             let first_item = scoped_matched_packages.next();
             (first_item, scoped_matched_packages.count() > 0)
         };
