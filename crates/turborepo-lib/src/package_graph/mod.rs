@@ -161,8 +161,7 @@ impl PackageGraph {
     /// dependencies(b) = {}
     /// dependencies(c) = None
     pub fn dependencies<'a>(&'a self, node: &WorkspaceNode) -> HashSet<&'a WorkspaceNode> {
-        let mut dependencies =
-            self.transitive_closure_inner(Some(node), &self.workspace_graph, Direction::Normal);
+        let mut dependencies = self.transitive_closure_inner(Some(node), Direction::Normal);
         dependencies.remove(node);
         dependencies
     }
@@ -178,8 +177,7 @@ impl PackageGraph {
     /// dependents(b) = {a}
     /// dependents(c) = None
     pub fn dependents(&self, node: &WorkspaceNode) -> HashSet<&WorkspaceNode> {
-        let mut dependents =
-            self.transitive_closure_inner(Some(node), &self.workspace_graph, Direction::Inverted);
+        let mut dependents = self.transitive_closure_inner(Some(node), Direction::Inverted);
         dependents.remove(node);
         dependents
     }
@@ -191,13 +189,12 @@ impl PackageGraph {
         &'a self,
         nodes: I,
     ) -> HashSet<&'a WorkspaceNode> {
-        self.transitive_closure_inner(nodes, &self.workspace_graph, Direction::Normal)
+        self.transitive_closure_inner(nodes, Direction::Normal)
     }
 
     fn transitive_closure_inner<'a, 'b, I: IntoIterator<Item = &'b WorkspaceNode>>(
         &'a self,
         nodes: I,
-        graph: &'a Graph<WorkspaceNode, (), Directed, u32>,
         direction: Direction,
     ) -> HashSet<&'a WorkspaceNode> {
         let indices = nodes
@@ -210,7 +207,7 @@ impl PackageGraph {
         let visitor = |event| {
             if let petgraph::visit::DfsEvent::Discover(n, _) = event {
                 visited.insert(
-                    graph
+                    self.workspace_graph
                         .node_weight(n)
                         .expect("node index found during dfs doesn't exist"),
                 );
@@ -218,8 +215,10 @@ impl PackageGraph {
         };
 
         match direction {
-            Direction::Normal => depth_first_search(graph, indices, visitor),
-            Direction::Inverted => depth_first_search(Reversed(graph), indices, visitor),
+            Direction::Normal => depth_first_search(&self.workspace_graph, indices, visitor),
+            Direction::Inverted => {
+                depth_first_search(Reversed(&self.workspace_graph), indices, visitor)
+            }
         };
 
         visited
