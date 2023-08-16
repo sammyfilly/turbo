@@ -220,6 +220,17 @@ impl<'a> TryFrom<&'a RunArgs> for ScopeOpts {
     }
 }
 
+impl<'a> From<&'a RunArgs> for CacheOpts<'a> {
+    fn from(run_args: &'a RunArgs) -> Self {
+        CacheOpts {
+            override_dir: run_args.cache_dir.as_deref(),
+            skip_filesystem: run_args.remote_only,
+            workers: run_args.cache_workers,
+            ..CacheOpts::default()
+        }
+    }
+}
+
 impl ScopeOpts {
     pub fn get_filters(&self) -> Vec<String> {
         [

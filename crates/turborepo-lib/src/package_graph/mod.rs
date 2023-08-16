@@ -9,7 +9,7 @@ use petgraph::{
     visit::{depth_first_search, EdgeRef, Reversed},
     Directed, Graph,
 };
-use turbopath::{AbsoluteSystemPath, AnchoredSystemPathBuf};
+use turbopath::{AbsoluteSystemPath, AnchoredSystemPath, AnchoredSystemPathBuf};
 use turborepo_lockfiles::Lockfile;
 
 use crate::{package_json::PackageJson, package_manager::PackageManager};
