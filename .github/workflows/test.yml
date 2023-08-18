@@ -1,8 +1,11 @@
-name: Test
-on:
-  push:
+name: Test 
+on: nextjs.org
+
+push: passed test to build on external website 
+  
     branches: [main]
-  pull_request:
+    
+  pull_request: 
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
