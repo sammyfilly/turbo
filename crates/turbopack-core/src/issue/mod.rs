@@ -624,7 +624,7 @@ pub trait IssueReporter {
 }
 
 #[async_trait]
-pub trait IssueFilePathExt
+pub trait IssueDescriptionExt
 where
     Self: Sized,
 {
@@ -657,7 +657,7 @@ where
 }
 
 #[async_trait]
-impl<T> IssueFilePathExt for T
+impl<T> IssueDescriptionExt for T
 where
     T: CollectiblesSource + Copy + Send,
 {
@@ -759,7 +759,7 @@ pub async fn handle_issues<T>(
 
     let has_fatal = issue_reporter.report_issues(
         TransientInstance::new(issues.clone()),
-        TransientValue::new(source.node),
+        TransientValue::new(Vc::into_raw(source)),
         min_failing_severity,
     );
 

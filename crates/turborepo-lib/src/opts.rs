@@ -3,8 +3,7 @@ use turbopath::AnchoredSystemPathBuf;
 use turborepo_cache::CacheOpts;
 
 use crate::{
-    cli::{Command, DryRunMode, EnvMode, LogPrefix, RunArgs},
-    daemon::{DaemonClient, DaemonConnector},
+    cli::{Command, DryRunMode, EnvMode, LogPrefix, OutputLogsMode, RunArgs},
     Args,
 };
 
@@ -26,25 +25,38 @@ impl<'a> TryFrom<&'a Args> for Opts<'a> {
         let run_opts = RunOpts::try_from(run_args.as_ref())?;
         let cache_opts = CacheOpts::from(run_args.as_ref());
         let scope_opts = ScopeOpts::try_from(run_args.as_ref())?;
+        let runcache_opts = RunCacheOpts::from(run_args.as_ref());
 
         Ok(Self {
             run_opts,
             cache_opts,
             scope_opts,
-            runcache_opts: RunCacheOpts::default(),
+            runcache_opts,
         })
     }
 }
 
 #[derive(Debug, Default)]
 pub struct RunCacheOpts {
-    pub(crate) output_watcher: Option<DaemonClient<DaemonConnector>>,
+    pub(crate) skip_reads: bool,
+    pub(crate) skip_writes: bool,
+    pub(crate) task_output_mode_override: Option<OutputLogsMode>,
+}
+
+impl<'a> From<&'a RunArgs> for RunCacheOpts {
+    fn from(args: &'a RunArgs) -> Self {
+        RunCacheOpts {
+            skip_reads: args.force.flatten().is_some_and(|f| f),
+            skip_writes: args.no_cache,
+            task_output_mode_override: args.output_logs,
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct RunOpts<'a> {
-    tasks: &'a [String],
-    concurrency: u32,
+    pub(crate) tasks: &'a [String],
+    pub(crate) concurrency: u32,
     parallel: bool,
     pub(crate) env_mode: EnvMode,
     // Whether or not to infer the framework for each workspace.
@@ -52,16 +64,21 @@ pub struct RunOpts<'a> {
     profile: Option<&'a str>,
     continue_on_error: bool,
     passthrough_args: &'a [String],
-    only: bool,
+    pub(crate) only: bool,
     dry_run: bool,
     pub(crate) dry_run_json: bool,
-    pub graph_dot: bool,
-    graph_file: Option<&'a str>,
+    pub graph: Option<GraphOpts<'a>>,
     pub(crate) no_daemon: bool,
     pub(crate) single_package: bool,
     log_prefix: LogPrefix,
     summarize: Option<Option<bool>>,
     pub(crate) experimental_space_id: Option<String>,
+}
+
+#[derive(Debug)]
+pub enum GraphOpts<'a> {
+    Stdout,
+    File(&'a str),
 }
 
 const DEFAULT_CONCURRENCY: u32 = 10;
@@ -77,11 +94,10 @@ impl<'a> TryFrom<&'a RunArgs> for RunOpts<'a> {
             .transpose()?
             .unwrap_or(DEFAULT_CONCURRENCY);
 
-        let (graph_dot, graph_file) = match &args.graph {
-            Some(file) if file.is_empty() => (true, None),
-            Some(file) => (false, Some(file.as_str())),
-            None => (false, None),
-        };
+        let graph = args.graph.as_deref().map(|file| match file {
+            "" => GraphOpts::Stdout,
+            f => GraphOpts::File(f),
+        });
 
         Ok(Self {
             tasks: args.tasks.as_slice(),
@@ -98,8 +114,7 @@ impl<'a> TryFrom<&'a RunArgs> for RunOpts<'a> {
             only: args.only,
             no_daemon: args.no_daemon,
             single_package: args.single_package,
-            graph_dot,
-            graph_file,
+            graph,
             dry_run_json: matches!(args.dry_run, Some(DryRunMode::Json)),
             dry_run: args.dry_run.is_some(),
         })

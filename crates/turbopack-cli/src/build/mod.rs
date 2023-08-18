@@ -24,7 +24,6 @@ use turbopack_core::{
     resolve::{
         origin::{PlainResolveOrigin, ResolveOriginExt},
         parse::Request,
-        pattern::QueryMap,
     },
 };
 use turbopack_env::dotenv::load_env;
@@ -119,7 +118,7 @@ impl TurbopackBuildBuilder {
                 )
                 .cell(),
                 self.browserslist_query,
-                self.minify_type.cell(),
+                self.minify_type,
             );
 
             // Await the result to propagate any errors.
@@ -143,7 +142,7 @@ impl TurbopackBuildBuilder {
             )
             .await?;
 
-            Ok(unit().node)
+            Ok(unit())
         });
 
         self.turbo_tasks.wait_task_completion(task, true).await?;
@@ -158,7 +157,7 @@ async fn build_internal(
     root_dir: String,
     entry_requests: Vc<EntryRequests>,
     browserslist_query: String,
-    minify_type: Vc<MinifyType>,
+    minify_type: MinifyType,
 ) -> Result<Vc<()>> {
     let env = Environment::new(Value::new(ExecutionEnvironment::Browser(
         BrowserEnvironment {
@@ -204,10 +203,14 @@ async fn build_internal(
         .cloned()
         .map(|r| async move {
             Ok(match &*r.await? {
-                EntryRequest::Relative(p) => Request::relative(Value::new(p.clone().into()), false),
-                EntryRequest::Module(m, p) => {
-                    Request::module(m.clone(), Value::new(p.clone().into()), QueryMap::none())
+                EntryRequest::Relative(p) => {
+                    Request::relative(Value::new(p.clone().into()), Vc::<String>::empty(), false)
                 }
+                EntryRequest::Module(m, p) => Request::module(
+                    m.clone(),
+                    Value::new(p.clone().into()),
+                    Vc::<String>::empty(),
+                ),
             })
         })
         .try_join()
