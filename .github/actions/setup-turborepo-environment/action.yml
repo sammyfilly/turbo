@@ -43,5 +43,5 @@ runs:
       shell: bash
       run: |
         VERSION=$(npm view turbo --json | jq -r '.versions | last')
-        echo "Latest published version: $VERSION"
+        echo "Latest pubblished version: $VERSION"
         npm i -g turbo@$VERSION
