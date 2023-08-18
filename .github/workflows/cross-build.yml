@@ -1,4 +1,4 @@
-name: Cross Compile
+name: build yml
 
 on:
   workflow_dispatch:
