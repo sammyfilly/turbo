@@ -1,5 +1,10 @@
 <https://cli.github.com/manual/gh_alias_set>
 <./packages/turbo/README.md>
+
+turbo is written by rust 
+*command: avoid installing errors to avoid issues while using rust later on
+rust language: <https://acrobat.adobe.com/id/urn:aaid:sc:VA6C2:b93e5863-341b-41c6-8803-21a3f2722e21>
+
 <https://nextjs.org/conf/tickets/oct22/sammyfilly>
 co-Author 
 @sammyfilly 
