@@ -75,8 +75,7 @@ jobs:
           PATTERNS: |
             pnpm-lock.yaml
             package.json
-            vercel*
-            xml*
+            Cargo.**
             crates/**
             shim/**
             xtask/**
