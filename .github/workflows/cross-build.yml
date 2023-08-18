@@ -1,4 +1,4 @@
-name: build yml
+name: import name()
 
 on:
   workflow_dispatch:
