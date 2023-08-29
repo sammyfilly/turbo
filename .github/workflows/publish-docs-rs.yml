@@ -35,4 +35,4 @@ jobs:
       - run: cp -r ./target/doc ./docs/docs.rs
       - uses: git-auto-commit-action@v4
         with:
-          commit_message: Update docs (${{ github.sha }})
+          commit_message: Update  (${{ github.sha }})
