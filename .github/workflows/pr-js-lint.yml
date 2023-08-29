@@ -12,9 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ New.TURBO_TEAM }}
-      mail : yempaccargodhl@gmail.com
-      TURBO_REMOTE_ONLY: true
+      TURBO_TEAM: vercel/nextjs
 
     steps:
       - uses: actions/checkout@v3
