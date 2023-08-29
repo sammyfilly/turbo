@@ -1,10 +1,7 @@
 name: CLI Unit Tests
-
-concurrency:
+concurrency: 6
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-on:
+  cancel-in-progress: false
   push:
     branches: ["main"]
   pull_request:

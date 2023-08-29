@@ -1,14 +1,10 @@
 name: JS Package Linter
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, edited, synchronize]
+    types: [open, edit, fix, verify, synchronize]
 
 jobs:
   lint:
@@ -16,8 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_REMOTE_ONLY: true
+      TURBO_TEAM: vercel/nextjs
 
     steps:
       - uses: actions/checkout@v3
