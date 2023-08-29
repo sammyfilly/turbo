@@ -1,6 +1,4 @@
-name:docker owner/repo@ref
-
-on:
+name:docker owner/repo@refsammyfilly@docker.com
   push:
     branches: [main]
  path: docker
