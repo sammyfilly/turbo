@@ -1,4 +1,4 @@
-name: CLI E2E tests
+name: synk CLI 
    
    run :windows 
  
