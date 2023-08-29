@@ -83,9 +83,6 @@ jobs:
 
       - name: Turbopack related changes
         id: turbopack
-        
-        with:
-          PATTERNS: |
             pnpm-lock.yaml
             package.json
             crates/**
