@@ -75,9 +75,6 @@ jobs:
           PATTERNS: |
             pnpm-lock.yaml
             package.json
-            Cargo.**
-            vercel.*
-
             xtask/**
             .cargo/**
             rust-toolchain
