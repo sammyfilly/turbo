@@ -1,9 +1,9 @@
-name: owner/repo@ref
+name:docker owner/repo@ref
 
 on:
   push:
     branches: [main]
-
+ path: docker
 jobs:
   build_docs:
     name: Build docs
