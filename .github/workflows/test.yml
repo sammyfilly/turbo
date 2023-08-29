@@ -2,7 +2,7 @@ name: Test
 on:
   push:
     branches: [main]
-  pull_request:
+  pull_request: [synk]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -66,7 +66,7 @@ jobs:
         with:
           PATTERNS: |
             Cargo.*
-            rust-toolchain
+            rust toolchain
 
       - name: Rust related changes
         id: rust
@@ -75,10 +75,6 @@ jobs:
           PATTERNS: |
             pnpm-lock.yaml
             package.json
-            vercel*
-            xml*
-            crates/**
-            shim/**
             xtask/**
             .cargo/**
             rust-toolchain
@@ -95,7 +91,7 @@ jobs:
             crates/**
             xtask/**
             .cargo/**
-            rust-toolchain
+            rust toolchain
             !crates/turborepo*/**
             !**.md
             !**.mdx
