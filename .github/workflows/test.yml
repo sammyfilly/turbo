@@ -1,8 +1,8 @@
-name: Test
+name: Turbo
 on:
   push:
     branches: [main]
-  pull_request:
+  pull_request: [synk]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -66,7 +66,7 @@ jobs:
         with:
           PATTERNS: |
             Cargo.*
-            rust-toolchain
+            rust toolchain
 
       - name: Rust related changes
         id: rust
@@ -75,10 +75,6 @@ jobs:
           PATTERNS: |
             pnpm-lock.yaml
             package.json
-            vercel*
-            xml*
-            crates/**
-            shim/**
             xtask/**
             .cargo/**
             rust-toolchain
@@ -87,14 +83,13 @@ jobs:
 
       - name: Turbopack related changes
         id: turbopack
-        uses: technote-space/get-diff-action@v6
-          PATTERNS: 
+> main
             pnpm-lock.yaml
             package.json
             crates/**
             xtask/**
             .cargo/**
-            rust-toolchain
+            rust toolchain
             !crates/turborepo*/**
             !**.md
             !**.mdx
@@ -194,6 +189,34 @@ jobs:
       main_push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       tag_push: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/node-file-trace') }}
 
+  build_turborepo:
+    name: Build Turborepo
+    runs-on: ${{ matrix.os.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: ubuntu
+            runner: ubuntu-latest
+          - name: macos
+            runner: macos-latest
+          - name: windows
+            runner: windows-latest
+    needs: determine_jobs
+    if: needs.determine_jobs.outputs.go == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-turborepo-environment
+        with:
+          target: ${{ matrix.os.name }}
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - run: turbo run build --filter=cli --color --env-mode=strict --token=${{ secrets.TURBO_TOKEN }} --team=${{ vars.TURBO_TEAM }}
+
   go_lint:
     name: Go linting
     runs-on: ubuntu-latest
@@ -252,7 +275,7 @@ jobs:
 
   go_integration:
     name: Go Integration Tests
-    needs: determine_jobs
+    needs: [determine_jobs, build_turborepo]
     if: needs.determine_jobs.outputs.go_integration == 'true'
     timeout-minutes: 30
     runs-on: ${{ matrix.os.runner }}
@@ -277,11 +300,11 @@ jobs:
           key: prysk-venv-${{ matrix.os.name }}
 
       - name: Integration Tests
-        run: turbo run test --filter=turborepo-tests-integration --color --env-mode=strict
+        run: turbo run test --filter=turborepo-tests-integration --color --env-mode=strict --token=${{ secrets.TURBO_TOKEN }} --team=${{ vars.TURBO_TEAM }}
 
   turborepo_e2e:
     name: Turborepo E2E Tests
-    needs: determine_jobs
+    needs: [determine_jobs, build_turborepo]
     if: needs.determine_jobs.outputs.turborepo_e2e == 'true'
     timeout-minutes: 60
     runs-on: ${{ matrix.os.runner }}
@@ -307,7 +330,7 @@ jobs:
 
   turborepo_examples:
     name: Turborepo Examples
-    needs: determine_jobs
+    needs: [determine_jobs, build_turborepo]
     if: needs.determine_jobs.outputs.examples == 'true'
     timeout-minutes: 40
 
@@ -336,8 +359,6 @@ jobs:
       # work out of box. We should take another stab at it later.
       - name: Setup Pnpm
         uses: pnpm/action-setup@v2.2.4
-        with:
-          version: 7.2.1
 
       - name: Make sure pnpm always has a cache
         shell: bash
@@ -375,7 +396,7 @@ jobs:
     name: JS Package Tests
     timeout-minutes: 30
     if: needs.determine_jobs.outputs.turborepo_js == 'true'
-    needs: determine_jobs
+    needs: [determine_jobs, build_turborepo]
     runs-on: ${{ matrix.os.runner }}
     strategy:
       fail-fast: false
@@ -571,7 +592,7 @@ jobs:
 
       - name: Run cargo clippy
         run: |
-          RUSTFLAGS="-D warnings -A deprecated" cargo groups clippy turbopack --features rustls-tls
+          RUSTFLAGS="-D warnings -A deprecated -Aclippy::too_many_arguments" cargo groups clippy turbopack --features rustls-tls
 
       - name: Run ast-grep lints
         run: |
@@ -651,7 +672,7 @@ jobs:
           comment_tag: check_next_swc_turbopack
 
   turborepo_rust_test:
-    needs: [turborepo_rust_check]
+    needs: [turborepo_rust_check, build_turborepo]
     strategy:
       fail-fast: false
       matrix:
@@ -708,9 +729,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
-          # TODO: update to Node 18. Currently fails because the node-canvas dependency doesn't compile for node 18
-          # Did not spend too much time investigating so it could be an easy fix.
-          node-version: 16
+          node-version: 18
 
       - name: Install tests dependencies
         working-directory: crates/turbopack/tests/node-file-trace
@@ -769,9 +788,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
-          # TODO: update to Node 18. Currently fails because the node-canvas dependency doesn't compile for node 18
-          # Did not spend too much time investigating so it could be an easy fix.
-          node-version: 16
+          node-version: 18
 
       - name: Setup Protoc
         uses: arduino/setup-protoc@v1
@@ -845,9 +862,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
-          # TODO: update to Node 18. Currently fails because the node-canvas dependency doesn't compile for node 18
-          # Did not spend too much time investigating so it could be an easy fix.
-          node-version: 16
+          node-version: 18
 
       - name: Build benchmarks for tests
         timeout-minutes: 120
@@ -912,9 +927,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
-          # TODO: update to Node 18. Currently fails because the node-canvas dependency doesn't compile for node 18
-          # Did not spend too much time investigating so it could be an easy fix.
-          node-version: 16
+          node-version: 18
 
       - name: Build benchmarks for tests
         timeout-minutes: 120
