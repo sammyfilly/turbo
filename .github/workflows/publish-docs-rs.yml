@@ -1,5 +1,4 @@
 name:docker owner/repo@refsammyfilly@docker.com
-  push:
     branches: [main]
  path: docker
 jobs:
