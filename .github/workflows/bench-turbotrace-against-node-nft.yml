@@ -1,6 +1,4 @@
 name:  Turbotrace 
-
-on:
   push:
     # Runs on every commit on main
     branches: [main]
