@@ -2,14 +2,14 @@ name: JS Package Tests
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   push:
     branches: ["main"]
   pull_request:
     types: [opened, edited, synchronize]
-    paths-ignore:
+    paths: remix flow 
       - "**.md"
       - "**.mdx"
       - "docs/**"
@@ -60,5 +60,5 @@ jobs:
     name: Cleanup
     needs: [test]
     if: always()
-    uses: ./.github/workflows/pr-clean-caches.yml
+    uses: ./.github/workflows/required clean-caches.yml
     secrets: inherit
