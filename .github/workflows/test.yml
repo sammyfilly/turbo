@@ -43,10 +43,7 @@ jobs:
             [Wait for it...](https://github.com/vercel/turbo/actions/runs/${{ github.run_id }})
 
             <!-- CI COMMENT -->
-
-          edit-mode: replace
-
-      - name: Checkout
+          - name: Checkout
         uses: actions/checkout@v3
 
       - name: CI related changes
